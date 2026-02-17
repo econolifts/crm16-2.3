@@ -1221,7 +1221,8 @@ canvas {
   <strong>📝 Default Logins:</strong><br>
   <strong>Admin:</strong> Username: <code>admin</code> | Password: <code>admin123</code><br>
   <strong>Tech 1:</strong> Username: <code>john</code> | Password: <code>tech1</code><br>
-  <strong>Tech 2:</strong> Username: <code>sarah</code> | Password: <code>tech2</code>
+  <strong>Tech 2:</strong> Username: <code>sarah</code> | Password: <code>tech2</code><br>
+  <strong>Tech 3:</strong> Username: <code>ivan</code> | Password: <code>1986</code>
 </div>
 
 <div style="text-align:center;margin-top:15px;padding:10px;background:#f8f9fa;border-radius:6px">
@@ -2042,7 +2043,8 @@ function save(){
 function initializeDemoData(){
   techs=[
     {name:"John",username:"john",pass:"tech1"},
-    {name:"Sarah",username:"sarah",pass:"tech2"}
+    {name:"Sarah",username:"sarah",pass:"tech2"},
+    {name:"Ivan Uys",username:"ivan",pass:"1986"}
   ];
   lifts=[
     {client:"Paul Tru",address:"Rooirevierrif George Western Cape",phone:"",lift:"EHL-D1/03",frequency:6,lastService:Date.now(),isFaulty:false},
@@ -2074,7 +2076,7 @@ function initializeDemoData(){
   tickets=[];
   localStorage.setItem('appInitialized','1');
   save();
-  alert('Demo data initialized with lifts from CSV! You can now login with:\n\nAdmin:\n  Username: admin\n  Password: admin123\n\nTech 1 (John):\n  Username: john\n  Password: tech1\n\nTech 2 (Sarah):\n  Username: sarah\n  Password: tech2');
+  alert('Demo data initialized with lifts from CSV! You can now login with:\n\nAdmin:\n  Username: admin\n  Password: admin123\n\nTech 1 (John):\n  Username: john\n  Password: tech1\n\nTech 2 (Sarah):\n  Username: sarah\n  Password: tech2\n\nTech 3 (Ivan Uys):\n  Username: ivan\n  Password: 1986');
 }
 
 function resetData(){
@@ -4977,6 +4979,12 @@ function resolveFault(ticketIdx){
 // Initialize with demo data only on first ever load
 if(!localStorage.getItem('appInitialized')){
   initializeDemoData();
+}
+
+// Migration: ensure Ivan Uys technician exists on devices that already initialized
+if(!techs.find(t=>t.username==='ivan')){
+  techs.push({name:"Ivan Uys",username:"ivan",pass:"1986"});
+  save();
 }
 
 // Auto-login if remembered
