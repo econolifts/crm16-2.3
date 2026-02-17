@@ -1338,12 +1338,6 @@ canvas {
 <div class="kpi-change">0 working today</div>
 </div>
 
-<div class="kpi-card">
-<div class="kpi-icon">💰</div>
-<div class="kpi-value" id="kpi-revenue">R 0</div>
-<div class="kpi-label">Est. Monthly Revenue</div>
-<div class="kpi-change positive">Based on contracts</div>
-</div>
 </div>
 
 <!-- Activity Feed -->
@@ -2076,7 +2070,7 @@ function initializeDemoData(){
   tickets=[];
   localStorage.setItem('appInitialized','1');
   save();
-  alert('Demo data initialized with lifts from CSV! You can now login with:\n\nAdmin:\n  Username: admin\n  Password: admin123\n\nTech 1 (John):\n  Username: john\n  Password: tech1\n\nTech 2 (Sarah):\n  Username: sarah\n  Password: tech2\n\nTech 3 (Ivan Uys):\n  Username: ivan\n  Password: 1986');
+  alert('App initialized! Please log in with credentials provided by your administrator.\n\nIMPORTANT: Change default passwords after first login via Settings.');
 }
 
 function resetData(){
@@ -2655,6 +2649,13 @@ function createTicket(){
   });
   
   Promise.all(processPhotos).then(()=>{
+    let isFaulty=jobType==='Faulty';
+
+    // Mark lift as faulty if this is a fault ticket
+    if(isFaulty){
+      lifts[liftIdx].isFaulty=true;
+    }
+
     tickets.push({
       ticketNumber,
       lift:lifts[liftIdx],
@@ -2666,12 +2667,19 @@ function createTicket(){
       notes:[],
       photos:photos,
       created:new Date().toISOString(),
-      isFaulty:false,
-      isIncomplete:false
+      isFaulty:isFaulty,
+      isIncomplete:false,
+      priority:isFaulty?'Normal':undefined
     });
-    
+
     save();
     renderAdmin();
+
+    // Update faults tab if this is a fault ticket
+    if(isFaulty && document.getElementById('faults-tab')){
+      renderFaults();
+    }
+
     document.getElementById('ticketLift').value='';
     document.getElementById('ticketTech').value='';
     document.getElementById('ticketDate').value='';
@@ -2897,7 +2905,7 @@ function renderAdmin(){
       techRows.push(`<tr>
           <td>${escAttr(t.name)}</td>
           <td>${escAttr(username)}</td>
-          <td>${escAttr(t.pass)}</td>
+          <td>********</td>
           <td><button onclick="deleteTech(${i})" class="btn-small btn-danger">Delete</button></td>
         </tr>`);
     });
@@ -2912,7 +2920,7 @@ function renderAdmin(){
       adminRows.push(`<tr>
           <td>${escAttr(a.name||'N/A')}</td>
           <td>${escAttr(a.username)}</td>
-          <td>${escAttr(a.pass)}</td>
+          <td>********</td>
           <td><button onclick="deleteAdmin(${i})" class="btn-small btn-danger" ${admins.length===1?'disabled':''}>Delete</button></td>
         </tr>`);
     });
@@ -4284,9 +4292,6 @@ function updateKPIs(){
   // Active Techs
   document.getElementById('kpi-active-techs').textContent=techs.length;
   
-  // Estimated Revenue (R500 per lift per month average)
-  let revenue=lifts.length*500;
-  document.getElementById('kpi-revenue').textContent=`R ${revenue.toLocaleString()}`;
 }
 
 function renderActivityFeed(){
@@ -4981,11 +4986,6 @@ if(!localStorage.getItem('appInitialized')){
   initializeDemoData();
 }
 
-// Migration: ensure Ivan Uys technician exists on devices that already initialized
-if(!techs.find(t=>t.username==='ivan')){
-  techs.push({name:"Ivan Uys",username:"ivan",pass:"1986"});
-  save();
-}
 
 // Auto-login if remembered
 window.onload=function(){
