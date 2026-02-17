@@ -2356,6 +2356,7 @@ function showTab(tab,ev){
   if(tab==='kanban') renderKanban();
   if(tab==='calendar') renderCalendar();
   if(tab==='tracking') renderTechTracking();
+  if(tab==='lifts') renderAdmin();
 }
 
 function showTechTab(tab,ev){
@@ -2853,83 +2854,66 @@ function renderAdmin(){
   let liftTable=document.getElementById('liftTable');
   if(!liftTable) return;
   
-  let fragment = document.createDocumentFragment();
-  let tempDiv = document.createElement('div');
-  
+  function escAttr(s){return String(s).replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  let rows = [];
   lifts.forEach((l,i)=>{
     let daysSince=Math.floor((Date.now()-l.lastService)/(1000*60*60*24));
     let dueIn=l.frequency*30-daysSince;
     let status=dueIn<0?'⚠️ OVERDUE':(dueIn<7?'🟡 Due Soon':'✅ OK');
     let statusClass=dueIn<0?'status-overdue':'';
     let faultyBadge=l.isFaulty?'<span style="background:#ff6b6b;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px">FAULTY</span>':'';
-    
-    tempDiv.innerHTML=`
-      <tr class="${statusClass}">
-        <td>${l.client}</td>
-        <td>${l.address}</td>
-        <td>${l.phone}</td>
-        <td>${l.lift} ${faultyBadge}</td>
+
+    rows.push(`<tr class="${statusClass}">
+        <td>${escAttr(l.client)}</td>
+        <td>${escAttr(l.address)}</td>
+        <td>${escAttr(l.phone)}</td>
+        <td>${escAttr(l.lift)} ${faultyBadge}</td>
         <td>${l.frequency} month(s)</td>
         <td>${status} (${dueIn} days)</td>
-        <td><button onclick="viewLiftHistory('${l.lift}')" class="btn-small" style="background:#17a2b8;color:#fff">📚 History</button></td>
-        <td><button onclick="openDocumentsModal('${l.lift}')" class="btn-small" style="background:#6f42c1;color:#fff">📄 Docs</button></td>
-        <td><button onclick="sendServiceReminder('${l.phone}','${l.client}','${l.lift}','${l.address}')" class="btn-small btn-warning">Send Reminder</button></td>
+        <td><button onclick="viewLiftHistory('${escAttr(l.lift)}')" class="btn-small" style="background:#17a2b8;color:#fff">📚 History</button></td>
+        <td><button onclick="openDocumentsModal('${escAttr(l.lift)}')" class="btn-small" style="background:#6f42c1;color:#fff">📄 Docs</button></td>
+        <td><button onclick="sendServiceReminder('${escAttr(l.phone)}','${escAttr(l.client)}','${escAttr(l.lift)}','${escAttr(l.address)}')" class="btn-small btn-warning">Send Reminder</button></td>
         <td><button onclick="openFaultReportModal(${i})" class="btn-small btn-danger">⚠️ Report Fault</button></td>
-        <td><a href="https://wa.me/${l.phone}" target="_blank" class="btn-small" style="background:#25d366;color:#fff;text-decoration:none;display:inline-block;padding:8px;border-radius:4px;font-size:12px">WhatsApp</a></td>
+        <td><a href="https://wa.me/${encodeURIComponent(l.phone)}" target="_blank" class="btn-small" style="background:#25d366;color:#fff;text-decoration:none;display:inline-block;padding:8px;border-radius:4px;font-size:12px">WhatsApp</a></td>
         <td>
           <button onclick="openEditLiftModal(${i})" class="btn-small btn-secondary">Edit</button>
           <button onclick="deleteLift(${i})" class="btn-small btn-danger">Delete</button>
         </td>
-      </tr>
-    `;
-    fragment.appendChild(tempDiv.firstElementChild);
+      </tr>`);
   });
-  
-  liftTable.innerHTML = '';
-  liftTable.appendChild(fragment);
+
+  liftTable.innerHTML = rows.join('');
   
   // Techs Table
   let techTable=document.getElementById('techTable');
   if(techTable){
-    let techFragment = document.createDocumentFragment();
-    let techDiv = document.createElement('div');
-    
+    let techRows = [];
     techs.forEach((t,i)=>{
       let username=t.username||'N/A';
-      techDiv.innerHTML=`
-        <tr>
-          <td>${t.name}</td>
-          <td>${username}</td>
-          <td>${t.pass}</td>
+      techRows.push(`<tr>
+          <td>${escAttr(t.name)}</td>
+          <td>${escAttr(username)}</td>
+          <td>${escAttr(t.pass)}</td>
           <td><button onclick="deleteTech(${i})" class="btn-small btn-danger">Delete</button></td>
-        </tr>
-      `;
-      techFragment.appendChild(techDiv.firstElementChild);
+        </tr>`);
     });
-    
-    techTable.innerHTML = '';
-    techTable.appendChild(techFragment);
+    techTable.innerHTML = techRows.join('');
   }
   
   // Admins Table
   let adminTable=document.getElementById('adminTable');
   if(adminTable){
-    let adminFragment = document.createDocumentFragment();
-    let adminDiv = document.createElement('div');
-
+    let adminRows = [];
     admins.forEach((a,i)=>{
-      adminDiv.innerHTML=`
-        <tr>
-          <td>${a.name||'N/A'}</td>
-        <td>${a.username}</td>
-        <td>${a.pass}</td>
-        <td><button onclick="deleteAdmin(${i})" class="btn-small btn-danger" ${admins.length===1?'disabled':''}>Delete</button></td>
-      </tr>
-    `;
-      adminFragment.appendChild(adminDiv.firstElementChild);
+      adminRows.push(`<tr>
+          <td>${escAttr(a.name||'N/A')}</td>
+          <td>${escAttr(a.username)}</td>
+          <td>${escAttr(a.pass)}</td>
+          <td><button onclick="deleteAdmin(${i})" class="btn-small btn-danger" ${admins.length===1?'disabled':''}>Delete</button></td>
+        </tr>`);
     });
-    adminTable.innerHTML='';
-    adminTable.appendChild(adminFragment);
+    adminTable.innerHTML = adminRows.join('');
   }
   
   // Admin Ticket Table
