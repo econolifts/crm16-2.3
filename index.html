@@ -1843,6 +1843,10 @@ canvas {
 </div>
 
 <div id="jobs-tab" class="tab-content active">
+<div style="text-align:center;margin:10px 0">
+<button onclick="refreshData();renderTech();" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(59,130,246,0.3)">Refresh Jobs</button>
+<p style="font-size:11px;color:#999;margin:4px 0 0 0">Pull latest tickets from admin</p>
+</div>
 <div class="card" style="background:#fff3cd;border-left:4px solid #ff6b6b">
 <h3>⚠️ Quick Fault Report</h3>
 <p style="font-size:13px;margin:5px 0">Report a fault you discovered on any lift:</p>
@@ -2032,6 +2036,18 @@ function save(){
   localStorage.setItem('liftDocuments',JSON.stringify(liftDocuments));
   localStorage.setItem('whatsappSettings',JSON.stringify(whatsappSettings));
   localStorage.setItem('techLocations',JSON.stringify(techLocations));
+}
+
+// Re-read all data from localStorage to pick up changes from other tabs/sessions
+function refreshData(){
+  admins=JSON.parse(localStorage.getItem('admins'))||[{username:"admin",pass:"admin123",name:"Main Admin"}];
+  lifts=JSON.parse(localStorage.getItem('lifts'))||[];
+  techs=JSON.parse(localStorage.getItem('techs'))||[];
+  tickets=JSON.parse(localStorage.getItem('tickets'))||[];
+  inspections=JSON.parse(localStorage.getItem('inspections'))||[];
+  liftDocuments=JSON.parse(localStorage.getItem('liftDocuments'))||[];
+  whatsappSettings=JSON.parse(localStorage.getItem('whatsappSettings'))||{language:'en',businessNumber:'',apiKey:'',quickReplies:[]};
+  techLocations=JSON.parse(localStorage.getItem('techLocations'))||{};
 }
 
 function initializeDemoData(){
@@ -3073,12 +3089,12 @@ function checkIncomplete(){
 function renderTech(){
   if(!currentTech) return;
 
-  let myTickets=tickets.filter(t=>t.tech===currentTech && t.status==='Open');
+  let myTickets=tickets.filter(t=>t.tech===currentTech && (t.status==='Open' || t.status==='In Progress'));
   let today=new Date().toISOString().split('T')[0];
   let todayJobs=myTickets.filter(t=>t.scheduledDate===today);
   let allJobs=myTickets.filter(t=>t.scheduledDate!==today);
   let completedJobs=tickets.filter(t=>t.tech===currentTech && t.status==='Done');
-  
+
   // Today's Jobs
   let techJobsToday=document.getElementById('techJobsToday');
   if(!techJobsToday) return;
@@ -3091,7 +3107,7 @@ function renderTech(){
       techJobsToday.innerHTML+=renderTicketCard(t,idx);
     });
   }
-  
+
   // All Open Jobs
   let techJobsAll=document.getElementById('techJobsAll');
   techJobsAll.innerHTML='';
@@ -3189,7 +3205,7 @@ function renderTicketCard(t,i){
   
   // Current ticket notes (if any, for incomplete tickets)
   let currentNotesHtml='';
-  if(t.notes && t.notes.length>0 && t.status==='Open'){
+  if(t.notes && t.notes.length>0 && (t.status==='Open' || t.status==='In Progress')){
     currentNotesHtml='<div style="margin:10px 0"><strong>Current Ticket Notes:</strong></div><div>';
     t.notes.forEach(n=>{
       currentNotesHtml+=`<div class="note-item"><strong>${n.tech}:</strong> ${n.text}<br><span class="note-time">${n.time}</span>`;
@@ -3215,6 +3231,7 @@ function renderTicketCard(t,i){
     ticketPhotosHtml+='</div>';
   }
   
+  let inProgressBadge=t.status==='In Progress'?'<div style="background:#ff9800;color:#fff;padding:5px;border-radius:4px;margin:5px 0;font-weight:bold">🔄 IN PROGRESS</div>':'';
   let faultyBadge=t.isFaulty?'<div style="background:#ff6b6b;color:#fff;padding:5px;border-radius:4px;margin:5px 0">⚠️ MARKED AS FAULTY</div>':'';
   let overdue=t.scheduledDate<new Date().toISOString().split('T')[0]?'<div style="color:red">⚠️ OVERDUE</div>':'';
   
@@ -3256,6 +3273,7 @@ function renderTicketCard(t,i){
       <strong>${t.lift.client} - ${t.lift.lift}</strong>
       <div style="${typeColor};padding:8px;border-radius:4px;margin:5px 0;font-weight:bold">${typeIcon} ${jobType}</div>
       ${priorityBadge}
+      ${inProgressBadge}
       ${faultyBadge}
       ${overdue}
       <div class="address-text">📍 ${t.lift.address}</div>
@@ -5018,6 +5036,37 @@ window.onload=function(){
     }
   }
   
+  // Cross-tab sync: when admin updates tickets in another tab, refresh tech view
+  window.addEventListener('storage',function(e){
+    if(e.key==='tickets'||e.key==='lifts'||e.key==='techs'){
+      refreshData();
+      if(currentTech) renderTech();
+      if(currentAdmin) renderAdmin();
+    }
+  });
+
+  // Auto-refresh when tab/app regains focus (picks up changes from other devices via shared storage)
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden){
+      refreshData();
+      if(currentTech) renderTech();
+      if(currentAdmin){
+        renderAdmin();
+        checkReminders();
+        checkFaulty();
+        checkIncomplete();
+      }
+    }
+  });
+
+  // Periodic auto-refresh for tech portal (every 30 seconds)
+  setInterval(function(){
+    if(currentTech && !document.hidden){
+      refreshData();
+      renderTech();
+    }
+  },30000);
+
   // PWA Installation Support
   let deferredPrompt;
   let installButton;
