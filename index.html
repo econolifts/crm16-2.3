@@ -1275,7 +1275,7 @@ canvas {
   <text x="58" y="48" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">Service Management System</text>
 </svg></div>
 <h1 style="margin:0;font-size:24px;text-align:center">Admin Panel</h1>
-<p style="margin:8px 0 0 0;font-size:14px;opacity:0.9">Logged in as: <span id="adminUsername"></span></p>
+<p style="margin:8px 0 0 0;font-size:14px;opacity:0.9">Logged in as: <span id="adminLoggedInName"></span></p>
 </div>
 <div class="tab-container">
 <button class="tab active" onclick="showTab('dashboard',event)">📊 Dashboard</button>
@@ -2072,6 +2072,7 @@ function initializeDemoData(){
     {client:"C.F. --Chris & Ina- Heyens",address:"32 Buitekant Street STILBAY",phone:"028 754 2336",lift:"EHL-L2/05",frequency:6,lastService:Date.now(),isFaulty:false}
   ];
   tickets=[];
+  localStorage.setItem('appInitialized','1');
   save();
   alert('Demo data initialized with lifts from CSV! You can now login with:\n\nAdmin:\n  Username: admin\n  Password: admin123\n\nTech 1 (John):\n  Username: john\n  Password: tech1\n\nTech 2 (Sarah):\n  Username: sarah\n  Password: tech2');
 }
@@ -2118,7 +2119,7 @@ function login(){
         }
         loginBox.style.display='none';
         adminApp.style.display='block';
-        document.getElementById('adminUsername').innerText=admin.name||admin.username;
+        document.getElementById('adminLoggedInName').innerText=admin.name||admin.username;
         renderAdmin();
         checkReminders();
         checkFaulty();
@@ -4973,8 +4974,8 @@ function resolveFault(ticketIdx){
   alert('✅ Fault resolved successfully!');
 }
 
-// Initialize with demo data if empty
-if(lifts.length===0 && techs.length===0){
+// Initialize with demo data only on first ever load
+if(!localStorage.getItem('appInitialized')){
   initializeDemoData();
 }
 
