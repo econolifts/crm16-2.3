@@ -2271,7 +2271,7 @@ function renderTechTracking(){
     // Find current job for this tech
     let currentJob=tickets.find(t=>
       t.tech===techName &&
-      t.status==='Open' && 
+      (t.status==='Open' || t.status==='In Progress') &&
       t.scheduledDate===new Date().toISOString().split('T')[0]
     );
     
@@ -3701,7 +3701,7 @@ function generateReport(){
   let techReportTable=document.getElementById('techReportTable');
   techReportTable.innerHTML='';
   techs.forEach((tech,idx)=>{
-    let techTickets=filteredTickets.filter(t=>t.tech===idx);
+    let techTickets=filteredTickets.filter(t=>t.tech===tech.name);
     let completed=techTickets.filter(t=>t.status==='Done').length;
     let open=techTickets.filter(t=>t.status==='Open').length;
     techReportTable.innerHTML+=`<tr><td>${tech.name}</td><td>${completed}</td><td>${open}</td><td>${techTickets.length}</td></tr>`;
@@ -4514,7 +4514,7 @@ function populateKanbanFilters(){
   let techFilter=document.getElementById('kanban-filter-tech');
   techFilter.innerHTML='<option value="">All Technicians</option>';
   techs.forEach((t,i)=>{
-    techFilter.innerHTML+=`<option value="${i}">${t.name}</option>`;
+    techFilter.innerHTML+=`<option value="${t.name}">${t.name}</option>`;
   });
 }
 
@@ -5013,6 +5013,13 @@ function resolveFault(ticketIdx){
 // Initialize with demo data only on first ever load
 if(!localStorage.getItem('appInitialized')){
   initializeDemoData();
+}
+
+// Migration: ensure Ivan Uys technician exists on devices that already initialized
+refreshData();
+if(!techs.find(t=>t.username==='ivan')){
+  techs.push({name:"Ivan Uys",username:"ivan",pass:"1986"});
+  save();
 }
 
 
