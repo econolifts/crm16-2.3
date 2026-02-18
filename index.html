@@ -1847,7 +1847,7 @@ canvas {
 <button onclick="refreshData();renderTech();" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(59,130,246,0.3)">Refresh Jobs</button>
 <p style="font-size:11px;color:#999;margin:4px 0 0 0">Pull latest tickets from admin</p>
 </div>
-<div class="card" style="background:#fff3cd;border-left:4px solid #ff6b6b">
+<div class="card" style="background:#fee2e2;border-left:4px solid #dc2626">
 <h3>⚠️ Quick Fault Report</h3>
 <p style="font-size:13px;margin:5px 0">Report a fault you discovered on any lift:</p>
 <select id="techFaultLiftSelect" style="margin:5px 0">
@@ -2028,14 +2028,19 @@ let currentDocumentLiftId="";
 let locationUpdateInterval=null; // For periodic location updates
 
 function save(){
-  localStorage.setItem('admins',JSON.stringify(admins));
-  localStorage.setItem('lifts',JSON.stringify(lifts));
-  localStorage.setItem('techs',JSON.stringify(techs));
-  localStorage.setItem('tickets',JSON.stringify(tickets));
-  localStorage.setItem('inspections',JSON.stringify(inspections));
-  localStorage.setItem('liftDocuments',JSON.stringify(liftDocuments));
-  localStorage.setItem('whatsappSettings',JSON.stringify(whatsappSettings));
-  localStorage.setItem('techLocations',JSON.stringify(techLocations));
+  try{
+    localStorage.setItem('admins',JSON.stringify(admins));
+    localStorage.setItem('lifts',JSON.stringify(lifts));
+    localStorage.setItem('techs',JSON.stringify(techs));
+    localStorage.setItem('tickets',JSON.stringify(tickets));
+    localStorage.setItem('inspections',JSON.stringify(inspections));
+    localStorage.setItem('liftDocuments',JSON.stringify(liftDocuments));
+    localStorage.setItem('whatsappSettings',JSON.stringify(whatsappSettings));
+    localStorage.setItem('techLocations',JSON.stringify(techLocations));
+  }catch(e){
+    alert('Error saving data! Storage may be full. Please clear old photos or completed tickets to free space.');
+    console.error('Save failed:',e);
+  }
 }
 
 // Re-read all data from localStorage to pick up changes from other tabs/sessions
@@ -2099,15 +2104,18 @@ function resetData(){
 
 function login(){
   showLoader('Logging in...');
-  
+
   // Use setTimeout to allow loader to show
   setTimeout(() => {
+    // Always refresh data from localStorage before login to pick up any changes from admin
+    refreshData();
+
     let type=document.getElementById('loginType').value;
     let username=document.getElementById('username').value.trim().toLowerCase();
     let pass=document.getElementById('password').value.trim();
     let rememberMe=document.getElementById('rememberMe').checked;
     let msg=document.getElementById('msg');
-    
+
     msg.innerText='';
     
     if(!username){
@@ -2834,7 +2842,10 @@ function submitFaultReport(){
   
   save();
   renderAdmin();
-  
+
+  // Update tech view so the new fault ticket appears immediately
+  if(currentTech) renderTech();
+
   // Render faults tab to update counts
   if(document.getElementById('faults-tab')){
     renderFaults();
@@ -5007,6 +5018,8 @@ if(!localStorage.getItem('appInitialized')){
 
 // Auto-login if remembered
 window.onload=function(){
+  // Refresh data from localStorage before auto-login to ensure latest data
+  refreshData();
   let remembered=localStorage.getItem('rememberedUser');
   if(remembered){
     try{
